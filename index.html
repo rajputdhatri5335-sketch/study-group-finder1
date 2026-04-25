@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyHive — Find Your Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a08;
+    --surface: #111110;
+    --card: #16161399;
+    --border: #2a2a26;
+    --accent: #c8a84b;
+    --accent2: #6ee7b7;
+    --accent3: #f87171;
+    --text: #e8e5d8;
+    --muted: #7a7868;
+    --tag-bg: #1e1e1a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Grid background */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(200,168,75,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(200,168,75,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,8,0.8);
+    position: sticky;
+    top: 0;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .logo span { color: var(--text); font-style: italic; }
+
+  .header-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent2);
+    margin-right: 6px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ─── HERO ─── */
+  .hero {
+    position: relative;
+    z-index: 5;
+    padding: 5rem 2rem 3rem;
+    text-align: center;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 1rem;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+  }
+
+  /* ─── CREATE BUTTON ─── */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.8rem;
+    background: var(--accent);
+    color: #0a0a08;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-primary:hover { background: #e0bc5a; transform: translateY(-1px); }
+
+  /* ─── FILTERS ─── */
+  .filters-bar {
+    position: relative;
+    z-index: 5;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-right: 0.5rem;
+  }
+
+  .filter-chip {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border);
+    background: var(--tag-bg);
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .filter-chip:hover, .filter-chip.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(200,168,75,0.08);
+  }
+
+  .search-input {
+    margin-left: auto;
+    padding: 0.4rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* ─── GRID ─── */
+  .groups-grid {
+    position: relative;
+    z-index: 5;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem 4rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1px;
+    background: var(--border);
+  }
+
+  /* ─── GROUP CARD ─── */
+  .group-card {
+    background: var(--surface);
+    padding: 1.5rem;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    overflow: hidden;
+  }
+  .group-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 0;
+    background: var(--accent);
+    transition: height 0.3s ease;
+  }
+  .group-card:hover { background: #1a1a17; }
+  .group-card:hover::before { height: 100%; }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+  }
+
+  .subject-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 0.2rem 0.6rem;
+    border: 1px solid;
+  }
+
+  .status-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .status-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  .card-desc {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .meta-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .meta-icon { font-size: 0.75rem; }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .members-row {
+    display: flex;
+    align-items: center;
+    gap: -4px;
+  }
+
+  .avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    margin-left: -6px;
+    color: #0a0a08;
+    font-weight: 700;
+  }
+
+  .avatar:first-child { margin-left: 0; }
+
+  .member-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-left: 0.6rem;
+  }
+
+  .btn-join {
+    padding: 0.4rem 1.1rem;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .btn-join:hover {
+    background: var(--accent);
+    color: #0a0a08;
+  }
+  .btn-join.joined {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    background: rgba(110,231,183,0.05);
+  }
+
+  /* ─── MODAL ─── */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(5,5,5,0.85);
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 520px;
+    padding: 2rem;
+    position: relative;
+    animation: slideUp 0.25s ease;
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1rem; right: 1rem;
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    padding: 0.2rem;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    margin-bottom: 0.3rem;
+    color: var(--accent);
+  }
+  .modal p.subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .field { margin-bottom: 1.2rem; }
+
+  .field label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 0.6rem 0.9rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: vertical;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .field select option { background: var(--surface); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .btn-submit {
+    width: 100%;
+    padding: 0.8rem;
+    background: var(--accent);
+    color: #0a0a08;
+    border: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+  .btn-submit:hover { background: #e0bc5a; }
+
+  /* ─── STATS BAR ─── */
+  .stats-bar {
+    position: relative;
+    z-index: 5;
+    max-width: 1100px;
+    margin: 0 auto 2rem;
+    padding: 0 2rem;
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .empty-state {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+  .empty-state p {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  .empty-state h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    color: var(--text);
+  }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--accent2);
+    padding: 0.75rem 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent2);
+    letter-spacing: 0.05em;
+    z-index: 200;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative;
+    z-index: 5;
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 600px) {
+    .filters-bar { flex-direction: column; align-items: stretch; }
+    .search-input { width: 100%; margin-left: 0; }
+    .field-row { grid-template-columns: 1fr; }
+    .stats-bar { gap: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Study<span>Hive</span></div>
+  <div class="header-meta"><span class="live-dot"></span>Live Groups</div>
+</header>
+
+<section class="hero">
+  <div class="hero-eyebrow">// collaborative learning platform</div>
+  <h1>Find your <em>study tribe.</em><br>Ace it together.</h1>
+  <p>Post a subject, find your people. Join groups already forming around topics you care about. No fluff, just focus.</p>
+  <button class="btn-primary" onclick="openModal()">⊕ Create a Group</button>
+</section>
+
+<div class="stats-bar" id="stats-bar">
+  <div class="stat"><div class="stat-num" id="stat-groups">0</div><div class="stat-label">Active Groups</div></div>
+  <div class="stat"><div class="stat-num" id="stat-members">0</div><div class="stat-label">Students Studying</div></div>
+  <div class="stat"><div class="stat-num" id="stat-subjects">0</div><div class="stat-label">Subjects Covered</div></div>
+</div>
+
+<div class="filters-bar">
+  <span class="filter-label">Filter:</span>
+  <button class="filter-chip active" onclick="filterGroups('all', this)">All</button>
+  <button class="filter-chip" onclick="filterGroups('open', this)">Open</button>
+  <button class="filter-chip" onclick="filterGroups('full', this)">Full</button>
+  <button class="filter-chip" onclick="filterGroups('online', this)">Online</button>
+  <button class="filter-chip" onclick="filterGroups('in-person', this)">In-Person</button>
+  <input class="search-input" type="text" placeholder="Search groups..." id="search-input" oninput="renderGroups()">
+</div>
+
+<div class="groups-grid" id="groups-grid"></div>
+
+<!-- Modal -->
+<div class="modal-backdrop" id="modal" onclick="handleBackdropClick(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>New Study Group</h2>
+    <p class="subtitle">// set up your session</p>
+
+    <div class="field">
+      <label>Group Name</label>
+      <input type="text" id="f-name" placeholder="e.g. Quantum Physics Warriors">
+    </div>
+    <div class="field">
+      <label>Subject</label>
+      <select id="f-subject">
+        <option value="">Select subject…</option>
+        <option>Mathematics</option>
+        <option>Physics</option>
+        <option>Chemistry</option>
+        <option>Biology</option>
+        <option>Computer Science</option>
+        <option>History</option>
+        <option>Literature</option>
+        <option>Economics</option>
+        <option>Law</option>
+        <option>Psychology</option>
+        <option>Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Short Description</label>
+      <textarea id="f-desc" rows="2" placeholder="What will you study? Any prerequisites?"></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Max Members</label>
+        <input type="number" id="f-max" min="2" max="20" value="5" placeholder="5">
+      </div>
+      <div class="field">
+        <label>Meeting Type</label>
+        <select id="f-type">
+          <option value="online">Online</option>
+          <option value="in-person">In-Person</option>
+          <option value="hybrid">Hybrid</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Schedule / Time</label>
+      <input type="text" id="f-time" placeholder="e.g. Weekends 6–8 PM IST">
+    </div>
+    <div class="field">
+      <label>Topics / Tags (comma separated)</label>
+      <input type="text" id="f-tags" placeholder="e.g. calculus, integrals, JEE">
+    </div>
+    <button class="btn-submit" onclick="createGroup()">Publish Group →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>StudyHive — built for learners, by learners &nbsp;·&nbsp; © 2025</footer>
+
+<script>
+// ─── COLOUR PALETTE PER SUBJECT ───
+const subjectStyles = {
+  "Mathematics":      { color: "#c8a84b", text: "#0a0a08" },
+  "Physics":          { color: "#6ee7b7", text: "#0a0a08" },
+  "Chemistry":        { color: "#f87171", text: "#0a0a08" },
+  "Biology":          { color: "#86efac", text: "#0a0a08" },
+  "Computer Science": { color: "#818cf8", text: "#0a0a08" },
+  "History":          { color: "#fb923c", text: "#0a0a08" },
+  "Literature":       { color: "#e879f9", text: "#0a0a08" },
+  "Economics":        { color: "#38bdf8", text: "#0a0a08" },
+  "Law":              { color: "#facc15", text: "#0a0a08" },
+  "Psychology":       { color: "#f472b6", text: "#0a0a08" },
+  "Other":            { color: "#94a3b8", text: "#0a0a08" },
+};
+
+const avatarColors = ["#c8a84b","#6ee7b7","#f87171","#818cf8","#38bdf8","#fb923c","#e879f9"];
+
+const INITIALS = ["AK","SR","PM","ND","RG","VT","JL","MB","SK","PD","AR","TN"];
+
+// ─── SEED DATA ───
+let groups = [
+  {
+    id: 1, name: "Calculus Conquerors", subject: "Mathematics",
+    desc: "Tackling JEE Advanced calculus — limits, differentiation, integration. Daily problems.",
+    max: 6, members: ["AK","SR","PM","ND"], type: "online",
+    schedule: "Mon & Thu, 8–10 PM IST", tags: ["calculus","JEE","limits"],
+    joined: false
+  },
+  {
+    id: 2, name: "Quantum Physics Lab", subject: "Physics",
+    desc: "Exploring quantum mechanics from scratch. Schrodinger, entanglement, superposition.",
+    max: 5, members: ["VT","JL","MB"], type: "hybrid",
+    schedule: "Sat 4–7 PM IST", tags: ["quantum","waves","modern-physics"],
+    joined: false
+  },
+  {
+    id: 3, name: "Organic Chem Survivors", subject: "Chemistry",
+    desc: "Mechanisms, reactions, named reactions. NEET & JEE prep focus.",
+    max: 8, members: ["SK","PD","AR","TN","AK","SR","PM","ND"], type: "online",
+    schedule: "Daily 7–8 PM IST", tags: ["organic","NEET","mechanisms"],
+    joined: false
+  },
+  {
+    id: 4, name: "DSA Deep Dive", subject: "Computer Science",
+    desc: "Leetcode grind + theory. Arrays to graphs, DP to trees. Placement prep.",
+    max: 6, members: ["SR","VT","MB"], type: "online",
+    schedule: "Weekdays 9–10 PM IST", tags: ["DSA","leetcode","placement"],
+    joined: false
+  },
+  {
+    id: 5, name: "Macro-Economics Circle", subject: "Economics",
+    desc: "Keynes vs Hayek. Monetary policy, fiscal policy, IS-LM model discussions.",
+    max: 7, members: ["PM","ND","PD"], type: "in-person",
+    schedule: "Sun 11 AM – 1 PM", tags: ["macro","policy","models"],
+    joined: false
+  },
+  {
+    id: 6, name: "Literary Analysis Club", subject: "Literature",
+    desc: "Close reading of modern classics. Weekly assigned text + group discussion.",
+    max: 5, members: ["AK","TN"], type: "online",
+    schedule: "Fri 7–9 PM IST", tags: ["fiction","analysis","postcolonial"],
+    joined: false
+  },
+];
+
+let nextId = 7;
+let activeFilter = 'all';
+
+// ─── UTILS ───
+function styleFor(subject) {
+  return subjectStyles[subject] || { color: "#94a3b8", text: "#0a0a08" };
+}
+
+function isFull(g) { return g.members.length >= g.max; }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── RENDER ───
+function renderGroups() {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const grid = document.getElementById('groups-grid');
+
+  let filtered = groups.filter(g => {
+    const matchFilter =
+      activeFilter === 'all' ? true :
+      activeFilter === 'open' ? !isFull(g) :
+      activeFilter === 'full' ? isFull(g) :
+      activeFilter === 'online' ? g.type === 'online' :
+      activeFilter === 'in-person' ? g.type === 'in-person' : true;
+
+    const matchSearch = !query ||
+      g.name.toLowerCase().includes(query) ||
+      g.subject.toLowerCase().includes(query) ||
+      g.desc.toLowerCase().includes(query) ||
+      g.tags.some(t => t.toLowerCase().includes(query));
+
+    return matchFilter && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <h3>No groups found</h3>
+        <p>Try adjusting filters or create the first group on this topic.</p>
+      </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(g => {
+    const style = styleFor(g.subject);
+    const full = isFull(g);
+    const memberSlots = g.members.slice(0, 4).map((m, i) =>
+      `<div class="avatar" style="background:${avatarColors[i % avatarColors.length]}">${m}</div>`
+    ).join('');
+    const extra = g.members.length > 4 ? `<div class="avatar" style="background:#2a2a26;color:#7a7868">+${g.members.length - 4}</div>` : '';
+
+    const tags = g.tags.map(t => `<span class="tag">#${t}</span>`).join('');
+
+    const typeIcon = g.type === 'online' ? '🌐' : g.type === 'in-person' ? '📍' : '⚡';
+
+    return `
+    <div class="group-card" id="card-${g.id}">
+      <div class="card-header">
+        <span class="subject-badge" style="border-color:${style.color};color:${style.color}">${g.subject}</span>
+        <span class="status-badge">
+          <span class="status-dot" style="background:${full ? '#f87171' : '#6ee7b7'}"></span>
+          ${full ? 'FULL' : 'OPEN'}
+        </span>
+      </div>
+      <div class="card-title">${g.name}</div>
+      <div class="card-desc">${g.desc}</div>
+      <div class="card-meta">
+        <span class="meta-item"><span class="meta-icon">${typeIcon}</span>${g.type}</span>
+        <span class="meta-item"><span class="meta-icon">🕐</span>${g.schedule}</span>
+        <span class="meta-item"><span class="meta-icon">👥</span>${g.members.length}/${g.max}</span>
+      </div>
+      <div class="card-tags">${tags}</div>
+      <div class="card-footer">
+        <div style="display:flex;align-items:center">
+          <div class="members-row">${memberSlots}${extra}</div>
+          <span class="member-count">${g.members.length} studying</span>
+        </div>
+        <button class="btn-join ${g.joined ? 'joined' : ''}" onclick="joinGroup(${g.id}, event)" ${full && !g.joined ? 'disabled style="opacity:0.4;cursor:not-allowed"' : ''}>
+          ${g.joined ? '✓ Joined' : full ? 'Full' : 'Join →'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  updateStats();
+}
+
+function updateStats() {
+  document.getElementById('stat-groups').textContent = groups.length;
+  const totalMembers = groups.reduce((a, g) => a + g.members.length, 0);
+  document.getElementById('stat-members').textContent = totalMembers;
+  const subjects = new Set(groups.map(g => g.subject));
+  document.getElementById('stat-subjects').textContent = subjects.size;
+}
+
+// ─── JOIN ───
+function joinGroup(id, e) {
+  e.stopPropagation();
+  const g = groups.find(x => x.id === id);
+  if (!g || isFull(g) && !g.joined) return;
+  if (g.joined) {
+    g.joined = false;
+    g.members.pop();
+    showToast('You left the group.');
+  } else {
+    g.joined = true;
+    g.members.push('YOU');
+    showToast(`✓ You joined "${g.name}"!`);
+  }
+  renderGroups();
+}
+
+// ─── FILTER ───
+function filterGroups(type, btn) {
+  activeFilter = type;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderGroups();
+}
+
+// ─── MODAL ───
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+function handleBackdropClick(e) {
+  if (e.target === document.getElementById('modal')) closeModal();
+}
+
+function createGroup() {
+  const name = document.getElementById('f-name').value.trim();
+  const subject = document.getElementById('f-subject').value;
+  const desc = document.getElementById('f-desc').value.trim();
+  const max = parseInt(document.getElementById('f-max').value) || 5;
+  const type = document.getElementById('f-type').value;
+  const schedule = document.getElementById('f-time').value.trim();
+  const tagsRaw = document.getElementById('f-tags').value;
+
+  if (!name || !subject || !desc) {
+    showToast('⚠ Please fill in name, subject & description.');
+    return;
+  }
+
+  const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+  const newGroup = {
+    id: nextId++,
+    name, subject, desc, max,
+    members: [INITIALS[Math.floor(Math.random() * INITIALS.length)]],
+    type, schedule: schedule || 'TBD',
+    tags: tags.length ? tags : [subject.toLowerCase()],
+    joined: false
+  };
+
+  groups.unshift(newGroup);
+
+  // Clear fields
+  ['f-name','f-subject','f-desc','f-max','f-type','f-time','f-tags'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = id === 'f-max' ? '5' : '';
+  });
+
+  closeModal();
+  activeFilter = 'all';
+  document.querySelectorAll('.filter-chip').forEach((c,i) => c.classList.toggle('active', i===0));
+  renderGroups();
+  showToast(`🎉 "${name}" is now live!`);
+}
+
+// ─── INIT ───
+renderGroups();
+</script>
+</body>
+</html>
